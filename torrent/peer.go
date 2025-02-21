@@ -46,10 +46,10 @@ func CreateHandshake(infoHash [20]byte, peerID string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// establishes a TCP connection and performs a handshake
+// establishes a TCP connection and performs a handshake and handles message exhange
 func ConnectToPeer(peer Peer, infoHash [20]byte, peerID string) error {
-    address := fmt.Sprintf("%s:%d", peer.IP, peer.Port) // Ensure no extra colons
-    conn, err := net.DialTimeout("tcp", address, 5*time.Second)
+    address := fmt.Sprintf("%s:%d", peer.IP, peer.Port)
+    conn, err := net.DialTimeout("tcp", address, 10*time.Second)
     if err != nil {
         return fmt.Errorf("failed to connect to peer %s: %v", address, err)
     }
@@ -66,7 +66,7 @@ func ConnectToPeer(peer Peer, infoHash [20]byte, peerID string) error {
         return fmt.Errorf("failed to send handshake: %v", err)
     }
 
-    // Read response
+    // Read handshake response
     resp := make([]byte, 68)
     _, err = conn.Read(resp)
     if err != nil {
@@ -74,5 +74,25 @@ func ConnectToPeer(peer Peer, infoHash [20]byte, peerID string) error {
     }
 
     fmt.Printf("Handshake successful with peer %s\n", address)
+
+    // Send "Interested" message
+    fmt.Println("Sending Interested message...")
+    err = SendMessage(conn, MsgInterested, nil)
+    if err != nil {
+        return fmt.Errorf("failed to send interested message: %v", err)
+    }
+
+    // Read peer response (should be unchoke)
+    msg, err := ReadMessage(conn)
+    if err != nil {
+        return fmt.Errorf("failed to read message from peer: %v", err)
+    }
+
+    if msg.ID == MsgUnchoke {
+        fmt.Println("Peer unchoked us! Ready to request pieces.")
+    } else {
+        fmt.Println("Peer did not unchoke us.")
+    }
+
     return nil
 }

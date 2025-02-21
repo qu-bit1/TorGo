@@ -44,11 +44,10 @@ func main() {
 
 	// Connect to first 5 peers
 	for i, peerAddr := range peers {
-		if i >= 5 {
+		if i >= 20 {
 			break
 		}
 
-		// Extract IP and Port correctly
 		host, port, err := net.SplitHostPort(peerAddr)
 		if err != nil {
 			fmt.Printf("Invalid peer address %s: %v\n", peerAddr, err)
