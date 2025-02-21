@@ -24,4 +24,14 @@ func main() {
 		log.Fatalf("error decoding pieces: %v", err)
 	}
 	fmt.Println("Number of Pieces: ", len(pieces))
+
+	peers, err := torrentFile.GetPeers()
+	if err != nil {
+		log.Fatalf("Error fetching peers: %v", err)
+	}
+
+	fmt.Println("Peers List:")
+	for _, peer := range peers {
+		fmt.Println(peer)
+	}
 }
