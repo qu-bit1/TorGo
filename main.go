@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	torrentFile, err := torrent.ParseTorrentFile("big-buck-bunny.torrent")
+	torrentFile, err := torrent.ParseTorrentFile("debian-mac-12.9.0-amd64-netinst.iso.torrent")
 	if err != nil {
 		log.Fatalf("error parsing torrent file: %v", err)
 	}
