@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
+	"strconv"
 
 	"github.com/qu-bit1/TorGo/torrent"
 )
@@ -33,5 +35,40 @@ func main() {
 	fmt.Println("Peers List:")
 	for _, peer := range peers {
 		fmt.Println(peer)
+	}
+
+	fmt.Println("Connecting to peers...")
+
+	infoHash, _ := torrentFile.ComputeInfoHash()
+	peerID := "-MY1000-123456789012"
+
+	// Connect to first 5 peers
+	for i, peerAddr := range peers {
+		if i >= 5 {
+			break
+		}
+
+		// Extract IP and Port correctly
+		host, port, err := net.SplitHostPort(peerAddr)
+		if err != nil {
+			fmt.Printf("Invalid peer address %s: %v\n", peerAddr, err)
+			continue
+		}
+
+		portInt, err := strconv.Atoi(port)
+		if err != nil {
+			fmt.Printf("Invalid port number %s: %v\n", port, err)
+			continue
+		}
+
+		peer := torrent.Peer{
+			IP:   host,
+			Port: portInt,
+		}
+
+		err = torrent.ConnectToPeer(peer, infoHash, peerID)
+		if err != nil {
+			fmt.Printf("Failed to connect to %s: %v\n", peerAddr, err)
+		}
 	}
 }
