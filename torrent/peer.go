@@ -75,24 +75,58 @@ func ConnectToPeer(peer Peer, infoHash [20]byte, peerID string) error {
 
     fmt.Printf("Handshake successful with peer %s\n", address)
 
-    // Send "Interested" message
-    fmt.Println("Sending Interested message...")
-    err = SendMessage(conn, MsgInterested, nil)
+    // Read peer's first response message (usually Bitfield)
+	msg, err := ReadMessage(conn)
+	if err != nil {
+		return fmt.Errorf("failed to read message from peer: %v", err)
+	}
+
+	if msg == nil {
+		fmt.Println("Error: Received a nil message from", address)
+		return err
+	}
+	if msg.ID == MsgBitfield {
+		fmt.Println("Received Bitfield message from", address)
+	} else {
+		fmt.Println("No Bitfield message received from", address)
+	}
+
+	// Send Interested message
+	fmt.Println("Sending Interested message...")
+	err = SendMessage(conn, MsgInterested, nil)
+	if err != nil {
+		return fmt.Errorf("failed to send interested message: %v", err)
+	}
+
+	// Read peer response (should be Unchoke)
+	msg, err = ReadMessage(conn)
+	if err != nil {
+		return fmt.Errorf("failed to read message from peer: %v", err)
+	}
+
+	if msg.ID == MsgUnchoke {
+		fmt.Println("Peer unchoked us! Requesting first piece...")
+
+    // Select the first piece (later, optimize piece selection)
+    pieceIndex := 0
+    blockOffset := 0
+    blockSize := 16384 // 16 KB blocks
+
+    // Send a request for the first block of the first piece
+    requestPayload := make([]byte, 12)
+    binary.BigEndian.PutUint32(requestPayload[0:4], uint32(pieceIndex))
+    binary.BigEndian.PutUint32(requestPayload[4:8], uint32(blockOffset))
+    binary.BigEndian.PutUint32(requestPayload[8:12], uint32(blockSize))
+
+    err = SendMessage(conn, MsgRequest, requestPayload)
     if err != nil {
-        return fmt.Errorf("failed to send interested message: %v", err)
+        return fmt.Errorf("failed to send request: %v", err)
     }
 
-    // Read peer response (should be unchoke)
-    msg, err := ReadMessage(conn)
-    if err != nil {
-        return fmt.Errorf("failed to read message from peer: %v", err)
-    }
-
-    if msg.ID == MsgUnchoke {
-        fmt.Println("Peer unchoked us! Ready to request pieces.")
-    } else {
-        fmt.Println("Peer did not unchoke us.")
-    }
+    fmt.Println("Request sent for piece", pieceIndex, "block", blockOffset)
+	} else {
+		fmt.Println("Peer did not unchoke us.")
+	}
 
     return nil
 }
